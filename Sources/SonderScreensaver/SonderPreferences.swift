@@ -37,7 +37,7 @@ public enum SonderEffectType: String, CaseIterable, Identifiable, Codable {
     }
     
     public static var selectableEffects: [SonderEffectType] {
-        return [.matrix, .synthgrid, .pour, .waves, .smoke, .slice, .unstable, .scattered, .sweep, .rings, .middleout]
+        return [.synthgrid, .pour, .waves, .smoke, .slice, .unstable, .scattered, .sweep, .rings, .middleout, .matrix]
     }
 }
 

@@ -473,12 +473,15 @@ public final class SonderEffects {
     
     // MARK: - 11. Matrix
     private static let matrixRainChars: [Character] = [
-        // Half-width Katakana (classic authentic Matrix rain)
-        "ｦ", "ｱ", "ｳ", "ｴ", "ｵ", "ｶ", "ｷ", "ｹ", "ｺ", "ｻ", "ｼ", "ｽ", "ｾ", "ｿ",
-        "ﾀ", "ﾂ", "ﾃ", "ﾅ", "ﾆ", "ﾇ", "ﾈ", "ﾊ", "ﾋ", "ﾎ", "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ",
-        "ﾔ", "ﾕ", "ﾗ", "ﾘ", "ﾜ",
-        // Numbers and cyberspace characters
-        "0", "1", "2", "3", "4", "5", "7", "8", "9",
+        // Complete authentic half-width Katakana
+        "ｦ", "ｱ", "ｲ", "ｳ", "ｴ", "ｵ", "ｶ", "ｷ", "ｸ", "ｹ", "ｺ",
+        "ｻ", "ｼ", "ｽ", "ｾ", "ｿ", "ﾀ", "ﾁ", "ﾂ", "ﾃ", "ﾄ",
+        "ﾅ", "ﾆ", "ﾇ", "ﾈ", "ﾉ", "ﾊ", "ﾋ", "ﾌ", "ﾍ", "ﾎ",
+        "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ", "ﾔ", "ﾕ", "ﾖ", "ﾗ", "ﾘ",
+        "ﾙ", "ﾚ", "ﾛ", "ﾜ", "ﾝ",
+        // Numbers 0 through 9
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+        // Cyberspace glyphs
         "X", "Z", "Y", "K", "+", "-", "*", "/", "<", ">", "=", "%", ":", "¦", "░", "▒", "▓"
     ]
     
@@ -495,7 +498,7 @@ public final class SonderEffects {
         canvasSize: CGSize
     ) -> [RenderGlyph] {
         var glyphs: [RenderGlyph] = []
-        glyphs.reserveCapacity(logoData.glyphs.count + 400)
+        glyphs.reserveCapacity(2500)
         
         // 1. Ambient rain streams in margins (left and right of logo)
         let totalGridWidth = CGFloat(logoData.colCount) * cellWidth
@@ -550,12 +553,14 @@ public final class SonderEffects {
                     if step == 0 {
                         glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: matrixHeadColor, alpha: streamAlpha, scale: 1.15, glowIntensity: 2.2))
                     } else if step <= 2 {
-                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: SonderPalette.lime, alpha: streamAlpha * 0.9, scale: 1.0, glowIntensity: 1.5))
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: SonderPalette.lime, alpha: streamAlpha * 0.9, scale: 1.0, glowIntensity: 1.2))
                     } else if step <= 6 {
-                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: SonderPalette.green, alpha: streamAlpha * 0.75, scale: 0.95, glowIntensity: 1.1))
+                        // Disable shadow blur for mid-tail to optimize rendering on Retina displays
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: SonderPalette.green, alpha: streamAlpha * 0.75, scale: 0.95, glowIntensity: 0.0))
                     } else {
+                        // Disable shadow blur for lower-tail
                         let tailFade = max(0.05, 0.45 - CGFloat(step - 6) * 0.05)
-                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: matrixDarkGreen, alpha: streamAlpha * tailFade, scale: 0.9, glowIntensity: 0.5))
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: matrixDarkGreen, alpha: streamAlpha * tailFade, scale: 0.9, glowIntensity: 0.0))
                     }
                 }
             }
@@ -649,13 +654,13 @@ public final class SonderEffects {
             
             let ch = matrixRainChars[(ambSeed + step * 13 + Int(elapsed * 18.0)) % matrixRainChars.count]
             if step == 0 {
-                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: matrixHeadColor, alpha: ambBaseAlpha * 0.9, scale: 1.05, glowIntensity: 1.4))
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: matrixHeadColor, alpha: ambBaseAlpha * 0.9, scale: 1.05, glowIntensity: 1.0))
             } else if step <= 2 {
-                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: SonderPalette.lime, alpha: ambBaseAlpha * 0.75, scale: 1.0, glowIntensity: 1.0))
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: SonderPalette.lime, alpha: ambBaseAlpha * 0.75, scale: 1.0, glowIntensity: 0.0))
             } else if step <= 5 {
-                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: SonderPalette.green, alpha: ambBaseAlpha * 0.5, scale: 0.95, glowIntensity: 0.7))
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: SonderPalette.green, alpha: ambBaseAlpha * 0.5, scale: 0.95, glowIntensity: 0.0))
             } else {
-                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: matrixDarkGreen, alpha: ambBaseAlpha * 0.25, scale: 0.9, glowIntensity: 0.3))
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: matrixDarkGreen, alpha: ambBaseAlpha * 0.25, scale: 0.9, glowIntensity: 0.0))
             }
         }
     }
