@@ -2,7 +2,8 @@
 
 A native macOS Swift animated screensaver that renders the **Sonder logo (emblem + "sonder" wordmark)** in high-DPI Retina typography with glowing brand colors (Sonder blue `#2f5be9`, electric green `#b2ff57`, warm orange `#ff9f6b`, navy, sky, and lime).
 
-It natively implements all 10 signature effects:
+It natively implements 11 signature effects:
+- **Matrix** — Authentic green digital rain cascading from the top of the screen before deciphering and crystallizing into the glowing Sonder logo.
 - **Synthgrid** — Cyberpunk digital grid scanner and decoding matrix with bright gradient lock-in.
 - **Pour** — Liquid neon cascade with gravity and spring rebound.
 - **Waves** — Harmonic multi-axis sine ripples with chromatic shifts.
@@ -47,6 +48,7 @@ You can also run the screensaver anytime in a native window or fullscreen withou
 | Key | Action |
 |---|---|
 | **Space** | Trigger next effect |
+| **M** | Jump directly to Matrix effect |
 | **1 – 0** | Jump directly to effect (1: Synthgrid, 2: Pour, 3: Waves, 4: Smoke, 5: Slice, 6: Unstable, 7: Scattered, 8: Sweep, 9: Rings, 0: Middleout) |
 | **F** | Toggle Full Screen |
 | **C** | Open Settings / Configuration Sheet |

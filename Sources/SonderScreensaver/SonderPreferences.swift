@@ -4,6 +4,7 @@ import ScreenSaver
 public enum SonderEffectType: String, CaseIterable, Identifiable, Codable {
     case cycleRandom = "cycle_random"
     case cycleSequential = "cycle_sequential"
+    case matrix = "matrix"
     case synthgrid = "synthgrid"
     case pour = "pour"
     case waves = "waves"
@@ -21,6 +22,7 @@ public enum SonderEffectType: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .cycleRandom: return "Rotate (Random)"
         case .cycleSequential: return "Rotate (Sequential)"
+        case .matrix: return "Matrix"
         case .synthgrid: return "Synthgrid"
         case .pour: return "Pour"
         case .waves: return "Waves"
@@ -35,7 +37,7 @@ public enum SonderEffectType: String, CaseIterable, Identifiable, Codable {
     }
     
     public static var selectableEffects: [SonderEffectType] {
-        return [.synthgrid, .pour, .waves, .smoke, .slice, .unstable, .scattered, .sweep, .rings, .middleout]
+        return [.synthgrid, .pour, .waves, .smoke, .slice, .unstable, .scattered, .sweep, .rings, .middleout, .matrix]
     }
 }
 

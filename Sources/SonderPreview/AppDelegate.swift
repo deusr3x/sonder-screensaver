@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         saverView.startAnimation()
         
         // Overlay HUD text field
-        let label = NSTextField(labelWithString: "Effect: \(saverView.engine.currentEffect.displayName)  [Space: Next | 1-0: Select | F: Fullscreen | C: Options | Esc: Exit]")
+        let label = NSTextField(labelWithString: "Effect: \(saverView.engine.currentEffect.displayName)  [Space: Next | 1-0, M: Select | F: Fullscreen | C: Options | Esc: Exit]")
         label.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .medium)
         label.textColor = NSColor.white.withAlphaComponent(0.70)
         label.backgroundColor = NSColor.black.withAlphaComponent(0.65)
@@ -147,6 +147,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             saver.engine.setSpecificEffect(.middleout)
             updateStatus()
             return true
+        case "m", "M":
+            saver.engine.setSpecificEffect(.matrix)
+            updateStatus()
+            return true
         default:
             return false
         }
@@ -154,7 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     private func updateStatus() {
         guard let saver = screenSaverView, let label = statusLabel else { return }
-        label.stringValue = "Effect: \(saver.engine.currentEffect.displayName)  [Space: Next | 1-0: Select | F: Fullscreen | C: Options | Esc: Exit]"
+        label.stringValue = "Effect: \(saver.engine.currentEffect.displayName)  [Space: Next | 1-0, M: Select | F: Fullscreen | C: Options | Esc: Exit]"
         label.sizeToFit()
     }
     
