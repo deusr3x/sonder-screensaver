@@ -51,6 +51,8 @@ public final class SonderEffects {
         }
         
         switch actualEffect {
+        case .matrix:
+            return renderMatrix(progress: progress, elapsed: elapsedTime, logoData: logoData, cellWidth: cellWidth, cellHeight: cellHeight, gridOrigin: gridOrigin, canvasSize: canvasSize)
         case .synthgrid:
             return renderSynthGrid(progress: progress, elapsed: elapsedTime, logoData: logoData, cellWidth: cellWidth, cellHeight: cellHeight, gridOrigin: gridOrigin, canvasSize: canvasSize)
         case .pour:
@@ -465,6 +467,195 @@ public final class SonderEffects {
                 let offsetX = (1.0 - localT) * (CGFloat(glyph.col) < centerCol ? 35.0 : -35.0)
                 let color = SonderPalette.blue.blended(withFraction: localT, of: targetColor) ?? targetColor
                 return RenderGlyph(character: glyph.character, x: homeX + offsetX, y: homeY, color: color, alpha: localT, scale: 1.0, glowIntensity: 1.0 + (1.0 - localT) * 0.8)
+            }
+        }
+    }
+    
+    // MARK: - 11. Matrix
+    private static let matrixRainChars: [Character] = [
+        // Half-width Katakana (classic authentic Matrix rain)
+        "ｦ", "ｱ", "ｳ", "ｴ", "ｵ", "ｶ", "ｷ", "ｹ", "ｺ", "ｻ", "ｼ", "ｽ", "ｾ", "ｿ",
+        "ﾀ", "ﾂ", "ﾃ", "ﾅ", "ﾆ", "ﾇ", "ﾈ", "ﾊ", "ﾋ", "ﾎ", "ﾏ", "ﾐ", "ﾑ", "ﾒ", "ﾓ",
+        "ﾔ", "ﾕ", "ﾗ", "ﾘ", "ﾜ",
+        // Numbers and cyberspace characters
+        "0", "1", "2", "3", "4", "5", "7", "8", "9",
+        "X", "Z", "Y", "K", "+", "-", "*", "/", "<", ">", "=", "%", ":", "¦", "░", "▒", "▓"
+    ]
+    
+    private static let matrixHeadColor = NSColor(srgbRed: 0.96, green: 1.0, blue: 0.96, alpha: 1.0)
+    private static let matrixDarkGreen = NSColor(srgbRed: 0.05, green: 0.45, blue: 0.14, alpha: 1.0)
+    
+    private static func renderMatrix(
+        progress: CGFloat,
+        elapsed: TimeInterval,
+        logoData: SonderLogoData,
+        cellWidth: CGFloat,
+        cellHeight: CGFloat,
+        gridOrigin: CGPoint,
+        canvasSize: CGSize
+    ) -> [RenderGlyph] {
+        var glyphs: [RenderGlyph] = []
+        glyphs.reserveCapacity(logoData.glyphs.count + 400)
+        
+        // 1. Ambient rain streams in margins (left and right of logo)
+        let totalGridWidth = CGFloat(logoData.colCount) * cellWidth
+        let leftSpace = gridOrigin.x
+        let rightStart = gridOrigin.x + totalGridWidth
+        let rightSpace = max(0.0, canvasSize.width - rightStart)
+        
+        let ambientCount = 8
+        for i in 0..<ambientCount {
+            if leftSpace > cellWidth * 2.0 {
+                let ambX = cellWidth * 1.5 + CGFloat(i) * ((leftSpace - cellWidth * 3.0) / CGFloat(max(1, ambientCount - 1)))
+                renderAmbientStream(colX: ambX, index: i, elapsed: elapsed, cellHeight: cellHeight, canvasHeight: canvasSize.height, into: &glyphs)
+            }
+            if rightSpace > cellWidth * 2.0 {
+                let ambX = rightStart + cellWidth * 1.5 + CGFloat(i) * ((rightSpace - cellWidth * 3.0) / CGFloat(max(1, ambientCount - 1)))
+                renderAmbientStream(colX: ambX, index: i + 10, elapsed: elapsed, cellHeight: cellHeight, canvasHeight: canvasSize.height, into: &glyphs)
+            }
+        }
+        
+        // 2. Primary rain streams cascading down logo columns
+        let startY = -cellHeight * 6.0
+        let endY = canvasSize.height + cellHeight * 14.0
+        let streamAlpha = max(0.0, 1.0 - max(0.0, progress - 0.70) / 0.22)
+        
+        // Find which columns in the logo have glyphs
+        var activeCols = Set<Int>()
+        for g in logoData.glyphs {
+            activeCols.insert(g.col)
+        }
+        
+        if streamAlpha > 0.01 {
+            for col in activeCols {
+                let colSeed = (col * 7919 + 104729) & 0x7fffffff
+                let delay = CGFloat(Double(colSeed % 280) / 1000.0) // 0.0 to 0.28
+                let speed = CGFloat(0.95 + Double((colSeed / 280) % 35) / 100.0) // 0.95 to 1.30
+                
+                guard progress >= delay else { continue }
+                let streamT = min(1.0, (progress - delay) / max(0.001, 0.65 - delay))
+                let headY = startY + (endY - startY) * pow(streamT, 1.1) * speed
+                
+                guard headY > startY + cellHeight else { continue }
+                let colX = gridOrigin.x + CGFloat(col) * cellWidth
+                let tailLen = 10 + (colSeed % 8)
+                
+                for step in 0...tailLen {
+                    let charY = headY - CGFloat(step) * cellHeight
+                    guard charY >= -cellHeight && charY <= canvasSize.height + cellHeight else { continue }
+                    
+                    let charIdx = (colSeed + step * 19 + Int(elapsed * 24.0)) % matrixRainChars.count
+                    let ch = matrixRainChars[charIdx]
+                    
+                    if step == 0 {
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: matrixHeadColor, alpha: streamAlpha, scale: 1.15, glowIntensity: 2.2))
+                    } else if step <= 2 {
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: SonderPalette.lime, alpha: streamAlpha * 0.9, scale: 1.0, glowIntensity: 1.5))
+                    } else if step <= 6 {
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: SonderPalette.green, alpha: streamAlpha * 0.75, scale: 0.95, glowIntensity: 1.1))
+                    } else {
+                        let tailFade = max(0.05, 0.45 - CGFloat(step - 6) * 0.05)
+                        glyphs.append(RenderGlyph(character: ch, x: colX, y: charY, color: matrixDarkGreen, alpha: streamAlpha * tailFade, scale: 0.9, glowIntensity: 0.5))
+                    }
+                }
+            }
+        }
+        
+        // 3. Logo Glyphs (ignited, deciphering, locking in to form the logo shape)
+        let brandStops = [SonderPalette.green, SonderPalette.lime, SonderPalette.green, SonderPalette.sky]
+        
+        for glyph in logoData.glyphs {
+            let homeX = gridOrigin.x + CGFloat(glyph.col) * cellWidth
+            let homeY = gridOrigin.y + CGFloat(glyph.row) * cellHeight
+            let targetColor = SonderPalette.interpolate(stops: brandStops, t: glyph.normalizedX * 0.7 + glyph.normalizedY * 0.3)
+            
+            let colSeed = (glyph.col * 7919 + 104729) & 0x7fffffff
+            let delay = CGFloat(Double(colSeed % 280) / 1000.0)
+            let speed = CGFloat(0.95 + Double((colSeed / 280) % 35) / 100.0)
+            
+            // Calculate progress when stream head hits this glyph's homeY
+            let neededRatio = max(0.0, min(1.0, (homeY - startY) / max(0.001, (endY - startY) * speed)))
+            let neededStreamT = pow(neededRatio, 1.0 / 1.1)
+            let arrivalP = delay + neededStreamT * (0.65 - delay)
+            
+            guard progress >= arrivalP else {
+                // Stream has not reached this glyph yet
+                continue
+            }
+            
+            let deltaP = progress - arrivalP
+            let lockDelay = 0.16 + (CGFloat((glyph.id * 43) % 100) / 100.0) * 0.12
+            let lockP = min(0.92, arrivalP + lockDelay)
+            
+            if deltaP < 0.035 {
+                // Phase A: Stream head actively hitting the glyph (supercharged white-hot impact)
+                let ch = matrixRainChars[(glyph.id * 7 + Int(elapsed * 30.0)) % matrixRainChars.count]
+                glyphs.append(RenderGlyph(character: ch, x: homeX, y: homeY, color: matrixHeadColor, alpha: 1.0, scale: 1.25, glowIntensity: 2.4))
+            } else if progress < lockP {
+                // Phase B: Matrix Deciphering (scrambling green matrix glyphs outlining the logo)
+                let ch = matrixRainChars[(glyph.id * 17 + Int(elapsed * 24.0)) % matrixRainChars.count]
+                let color = (glyph.id % 4 == 0) ? SonderPalette.lime : SonderPalette.green
+                glyphs.append(RenderGlyph(character: ch, x: homeX, y: homeY, color: color, alpha: 0.95, scale: 1.0, glowIntensity: 1.3))
+            } else {
+                // Phase C: Crystallization & Lock-in (resolving into true logo ASCII characters)
+                let settleT = min(1.0, (progress - lockP) / 0.08)
+                if settleT < 1.0 {
+                    let flash = (1.0 - settleT) * 1.8
+                    let flashColor = NSColor.white.blended(withFraction: 1.0 - (1.0 - settleT) * 0.7, of: targetColor) ?? targetColor
+                    glyphs.append(RenderGlyph(character: glyph.character, x: homeX, y: homeY, color: flashColor, alpha: 1.0, scale: 1.0 + flash * 0.22, glowIntensity: 1.0 + flash * 1.6))
+                } else {
+                    // Fully settled in the shape of the logo
+                    var displayChar = glyph.character
+                    var displayColor = targetColor
+                    var displayGlow: CGFloat = 1.0
+                    
+                    // Subtle alive matrix glitch during hold
+                    if progress >= 0.98 {
+                        let glitchSeed = (glyph.id * 131 + Int(elapsed * 5.0)) % 180
+                        if glitchSeed == 42 {
+                            displayChar = matrixRainChars[(glyph.id + Int(elapsed * 15.0)) % matrixRainChars.count]
+                            displayColor = SonderPalette.lime
+                            displayGlow = 1.8
+                        }
+                    }
+                    
+                    glyphs.append(RenderGlyph(character: displayChar, x: homeX, y: homeY, color: displayColor, alpha: 1.0, scale: 1.0, glowIntensity: displayGlow))
+                }
+            }
+        }
+        
+        return glyphs
+    }
+    
+    private static func renderAmbientStream(
+        colX: CGFloat,
+        index: Int,
+        elapsed: TimeInterval,
+        cellHeight: CGFloat,
+        canvasHeight: CGFloat,
+        into glyphs: inout [RenderGlyph]
+    ) {
+        let ambSeed = index * 997 + 101
+        let cycle = 2.4 + Double((ambSeed % 18)) / 10.0
+        let offset = Double((ambSeed % 100)) / 100.0 * cycle
+        let ambT = CGFloat(fmod(elapsed + offset, cycle) / cycle)
+        let ambHeadY = -cellHeight * 4.0 + ambT * (canvasHeight + cellHeight * 16.0)
+        let ambTail = 8 + (ambSeed % 6)
+        let ambBaseAlpha: CGFloat = 0.35
+        
+        for step in 0...ambTail {
+            let y = ambHeadY - CGFloat(step) * cellHeight
+            guard y >= -cellHeight && y <= canvasHeight + cellHeight else { continue }
+            
+            let ch = matrixRainChars[(ambSeed + step * 13 + Int(elapsed * 18.0)) % matrixRainChars.count]
+            if step == 0 {
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: matrixHeadColor, alpha: ambBaseAlpha * 0.9, scale: 1.05, glowIntensity: 1.4))
+            } else if step <= 2 {
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: SonderPalette.lime, alpha: ambBaseAlpha * 0.75, scale: 1.0, glowIntensity: 1.0))
+            } else if step <= 5 {
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: SonderPalette.green, alpha: ambBaseAlpha * 0.5, scale: 0.95, glowIntensity: 0.7))
+            } else {
+                glyphs.append(RenderGlyph(character: ch, x: colX, y: y, color: matrixDarkGreen, alpha: ambBaseAlpha * 0.25, scale: 0.9, glowIntensity: 0.3))
             }
         }
     }

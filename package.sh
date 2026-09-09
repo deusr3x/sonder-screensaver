@@ -10,17 +10,22 @@ ZIP_NAME="Sonder-Screensaver.zip"
 
 echo "==> Packaging Sonder Screen Saver for distribution..."
 
-# 1. Ensure latest universal build
-"$SCRIPT_DIR/build.sh"
+# 1. Build universal binaries (arm64 + x86_64)
+"$SCRIPT_DIR/build.sh" --universal
 
-# 2. Prepare clean staging directory
+# 2. Update prebuilt bundle in repo
+mkdir -p "$SCRIPT_DIR/prebuilt"
+rm -rf "$SCRIPT_DIR/prebuilt/Sonder.saver"
+cp -R "$SCRIPT_DIR/build/Sonder.saver" "$SCRIPT_DIR/prebuilt/Sonder.saver"
+
+# 3. Prepare clean staging directory
 rm -rf "$DIST_DIR"
 mkdir -p "$STAGE_DIR"
 
-# 3. Copy Sonder.saver
+# 4. Copy Sonder.saver
 cp -R "$SCRIPT_DIR/build/Sonder.saver" "$STAGE_DIR/Sonder.saver"
 
-# 4. Create one-click installer script (.command)
+# 5. Create one-click installer script (.command)
 cat << 'INSTALLER_EOF' > "$STAGE_DIR/Install-Sonder.command"
 #!/bin/bash
 set -euo pipefail
@@ -69,7 +74,7 @@ echo ""
 INSTALLER_EOF
 chmod +x "$STAGE_DIR/Install-Sonder.command"
 
-# 5. Create README.txt for recipients
+# 6. Create README.txt for recipients
 cat << 'README_EOF' > "$STAGE_DIR/README.txt"
 Sonder Screen Saver for macOS
 =============================
@@ -109,7 +114,7 @@ If macOS displays a notice saying "Sonder.saver cannot be opened because the dev
 - Alternatively: Go to System Settings -> Privacy & Security, scroll down to the Security section, and click "Open Anyway".
 README_EOF
 
-# 6. Create clean ZIP archives (without macOS resource forks or ._ files)
+# 7. Create clean ZIP archives (without macOS resource forks or ._ files)
 cd "$STAGE_DIR"
 zip -r -X -q "$DIST_DIR/Sonder.saver.zip" "Sonder.saver"
 zip -r -X -q "$DIST_DIR/$ZIP_NAME" "Sonder.saver" "Install-Sonder.command" "README.txt"

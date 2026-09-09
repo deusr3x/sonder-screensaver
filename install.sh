@@ -8,16 +8,26 @@ DESTINATION="$TARGET_DIR/$SAVER_NAME"
 
 echo "==> Installing Sonder Screen Saver..."
 
-# Build if needed
-"$SCRIPT_DIR/build.sh"
+# 1. Determine source bundle
+if [[ "${1:-}" == "--build" ]] || [[ ! -d "$SCRIPT_DIR/prebuilt/$SAVER_NAME" && ! -d "$SCRIPT_DIR/build/$SAVER_NAME" ]]; then
+    echo "--> Compiling from source..."
+    "$SCRIPT_DIR/build.sh"
+    SOURCE_BUNDLE="$SCRIPT_DIR/build/$SAVER_NAME"
+elif [[ -d "$SCRIPT_DIR/prebuilt/$SAVER_NAME" ]]; then
+    echo "--> Using pre-built universal bundle (instant install)..."
+    SOURCE_BUNDLE="$SCRIPT_DIR/prebuilt/$SAVER_NAME"
+else
+    SOURCE_BUNDLE="$SCRIPT_DIR/build/$SAVER_NAME"
+fi
 
 mkdir -p "$TARGET_DIR"
 
 echo "--> Copying to $DESTINATION..."
 rm -rf "$DESTINATION"
-cp -R "$SCRIPT_DIR/build/$SAVER_NAME" "$DESTINATION"
+cp -R "$SOURCE_BUNDLE" "$DESTINATION"
 
 # Ensure quarantine attributes are cleared for local execution
+echo "--> Clearing macOS quarantine attributes..."
 xattr -cr "$DESTINATION" 2>/dev/null || true
 
 # Terminate any cached legacyScreenSaver instances so macOS reloads the bundle
